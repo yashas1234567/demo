@@ -1,0 +1,18 @@
+{
+  "id": "/messaging-cloud-v2/messaging-kafka-streams",
+  "cmd": "wget https://s3-ap-southeast-1.amazonaws.com/onedirect/od_new_analytics/gcp-messaging-cloud/prod/v2/jars/analytics-kafka-streams-1.0-SNAPSHOT.jar && java -jar -Dspring.profiles.active=gcp-in analytics-kafka-streams-1.0-SNAPSHOT.jar",
+  "cpus": 1,
+  "mem": 1024,
+  "disk": 4096,
+  "instances": 2,
+  "acceptedResourceRoles": [
+    "*"
+  ],
+  "portDefinitions": [
+    {
+      "port": 10004,
+      "name": "default",
+      "protocol": "tcp"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "/service-cloud-analytics-v2/source-kstreams-v2",
+  "cmd": "wget https://s3-ap-southeast-1.amazonaws.com/onedirect/od_new_analytics/gcp-service-cloud/prod/2.0.0-RELEASE/jars/analytics-kafka-streams-uber-2.0.jar && java -cp analytics-kafka-streams-uber-2.0.jar  com.onedirect.streams.EmbeddedAnalyticsKstream",
+  "cpus": 1,
+  "mem": 2048,
+  "disk": 4096,
+  "instances": 2,
+  "acceptedResourceRoles": [
+    "*"
+  ],
+  "portDefinitions": [
+    {
+      "port": 10005,
+      "name": "default",
+      "protocol": "tcp"
+    }
+  ]
+}

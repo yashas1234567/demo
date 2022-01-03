@@ -1,0 +1,24 @@
+{
+  "id": "/kafka-connect/ea-connect",
+  "cmd": "mkdir -p /opt/connectors/ &&  rm -f /opt/connectors/analytics-kafka-connect-uber-2.0.jar && rm -f /opt/connectors/messaging-analytics-kafka-connect-uber-2.0.jar && rm -f /opt/connectors/feedback-analytics-kafka-connect-uber-2.0.jar && wget -O /opt/connectors/analytics-kafka-connect-uber-2.0.jar https://s3-ap-southeast-1.amazonaws.com/onedirect/od_new_analytics/gcp-service-cloud/prod/2.0.0-RELEASE/jars/analytics-kafka-connect-uber-2.0.jar && wget -O /opt/connectors/feedback-analytics-kafka-connect-uber-2.0.jar https://s3-ap-southeast-1.amazonaws.com/onedirect/od_new_analytics/gcp-service-cloud/prod/2.0.0-RELEASE/jars/feedback-analytics-kafka-connect-uber-2.0.jar && KAFKA_HEAP_OPTS='-Xms2g -Xmx2g' /opt/kafka_2.11-0.11.0.2/bin/connect-distributed.sh /opt/kafka_2.11-0.11.0.2/config/connect-distributed.properties",
+  "cpus": 2,
+  "mem": 4096,
+  "disk": 4096,
+  "instances": 3,
+  "constraints": [
+    [
+      "hostname",
+      "UNIQUE"
+    ]
+  ],
+  "acceptedResourceRoles": [
+    "*"
+  ],
+  "portDefinitions": [
+    {
+      "port": 10007,
+      "name": "default",
+      "protocol": "tcp"
+    }
+  ]
+}

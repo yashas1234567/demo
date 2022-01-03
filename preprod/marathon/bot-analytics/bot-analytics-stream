@@ -1,0 +1,18 @@
+{
+  "id": "/bot-analytics/bot-analytics-streams",
+  "cmd": "wget https://s3-ap-southeast-1.amazonaws.com/onedirect/od_new_analytics/gcp-service-cloud/prod/2.0.0-RELEASE/jars/botanalytics-kafka-streams-1.0.jar && java -jar -Dspring.profiles.active=azure botanalytics-kafka-streams-1.0.jar",
+  "cpus": 1,
+  "mem": 1024,
+  "disk": 1024,
+  "instances": 1,
+  "acceptedResourceRoles": [
+    "*"
+  ],
+  "portDefinitions": [
+    {
+      "port": 10003,
+      "name": "default",
+      "protocol": "tcp"
+    }
+  ]
+}

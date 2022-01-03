@@ -1,0 +1,18 @@
+{
+  "id": "/feedback-cloud-analytics/score-kstream",
+  "cmd": "wget https://s3-ap-southeast-1.amazonaws.com/onedirect/od_new_analytics/gcp-service-cloud/prod/2.0.0-RELEASE/jars/feedback-analytics-kafka-stream-uber-2.0.jar && java -cp feedback-analytics-kafka-stream-uber-2.0.jar com.onedirect.streams.streams.ScoreKStream",
+  "cpus": 2,
+  "mem": 2048,
+  "disk": 2048,
+  "instances": 1,
+  "acceptedResourceRoles": [
+    "*"
+  ],
+  "portDefinitions": [
+    {
+      "port": 10002,
+      "name": "default",
+      "protocol": "tcp"
+    }
+  ]
+}
