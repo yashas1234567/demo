@@ -1,0 +1,891 @@
+version: '3'
+services:
+  redis:
+    image: redis:3.2.1-alpine
+    command: redis-server --requirepass 742c8bb70bed479eac5c646df3e0b37f735b78c5
+    ports:
+    - 6379:6379
+    volumes:
+    - ./redis:/data
+  rabbitmq:
+    image: rabbitmq:3.7.17-management
+    ports:
+    - 15672:15672
+    - 5672:5672
+    environment:
+    - RABBITMQ_DEFAULT_USER=admin
+    - RABBITMQ_DEFAULT_PASS=kar.95424
+  kong-database:
+    image: postgres:9.4
+    ports:
+    - 5432
+    volumes:
+    - ./pgsql:/var/lib/postgresql/data
+    environment:
+    - POSTGRES_USER=kong
+    - POSTGRES_DB=kong
+  ingressapi:
+    image: docker08.onedirectdev.in:5000/ingressapi:gcp-production
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/ingressapi/*
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+  kong:
+    image: kong:0.10.2
+    ports:
+    - 8443:8443
+    - 8000:8000
+    - 8001:8001
+    - 7946:7946
+    - 7946:7946/udp
+    depends_on:
+    - kong-database
+    environment:
+    - KONG_DATABASE=postgres
+    - KONG_PG_HOST=kong-database
+  kongui:
+    image: pgbi/kong-dashboard:v2
+    depends_on:
+    - kong
+    ports:
+    - 8080:8080
+  nginx:
+    image: nginx:1.11-alpine
+    depends_on:
+    - kong
+    volumes:
+    - ./nginx/:/etc/nginx/
+    - ./cache:/var/nginx/cache
+    ports:
+    - 80:80
+    - 443:443
+    environment:
+    - NGINX_PORT=80
+  onedirectnewui:
+    image: docker08.onedirectdev.in:5000/onedirectnewui:external-form-launch-bug
+    ports:
+    - 44004
+    environment:
+    - VIRTUAL_HOST=*/v2/*
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+  auth:
+    image: docker08.onedirectdev.in:5000/auth:production
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/auth/*
+    - HTTP_CHECK=GET /auth/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+  
+  brandapi:
+    image: docker08.onedirectdev.in:5000/brandapi:az-prod
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/brandapi/*
+    - HTTP_CHECK=GET /brandapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    - kafkahost=172.16.0.16
+    - kafkaport=7708
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+    - kafka:172.16.0.16
+
+
+  isapi:
+    image: docker08.onedirectdev.in:5000/isapi:az-prod
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/isapi/*
+    - HTTP_CHECK=GET /isapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+    - rabbitmq:172.16.1.167
+    - kafka:172.16.1.113
+  ticketapi:
+    image: docker08.onedirectdev.in:5000/ticketapi:custom-info-check
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/ticketapi/*
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    - kafkahost=172.16.0.16
+    - kafkaport=7708
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - consolidatedslavehost:172.16.1.105
+    - redis:172.16.1.109
+    - kafka:172.16.0.16
+  
+  suggestionapi:
+    image: docker08.onedirectdev.in:5000/suggestionapi:project-initial-pr
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/suggestionapi/*
+    - HTTP_CHECK=GET /suggestionapi/status   
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - consolidatedslavehost:172.16.1.105
+    - redis:172.16.1.109
+
+  wifeapi:
+    image: docker08.onedirectdev.in:5000/wifeapi:auto-ack-new-feature
+    ports:
+    - 3000
+    environment:
+    - VIRTUAL_HOST=/wifeapi/*
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+  airsewaapi:
+    image: docker08.onedirectdev.in:5000/airsewaapi:media-refractor
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/airsewaapi/*
+    - HTTP_CHECK=GET /airsewaapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    - kafkahost=172.16.0.16
+    - kafkaport=7713
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+  notification:
+    image: docker08.onedirectdev.in:5000/notification:ODB10-1529-sla
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/notification/*
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.111
+    - mysqlslave:172.16.1.111
+    - redis:172.16.1.109
+    - rabbitmq:172.16.1.167
+  emailapi:
+    image: docker08.onedirectdev.in:5000/emailapi:auto-ack-new-feature
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/emailapi/*
+    - HTTP_CHECK=GET /emailapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    - kafkahost=172.16.0.16
+    - kafkaport=7713
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+  emailewsapi:
+    image: docker08.onedirectdev.in:5000/emailewsapi:gcp-production
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/emailewsapi/*
+    - HTTP_CHECK=GET /emailewsapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    - kafkahost=172.16.0.16
+    - kafkaport=7713
+    extra_hosts:
+    - mysql:172.16.0.31
+    - mysqlslave:172.16.0.31
+    - redis:172.16.1.109
+  profanityapi:
+    image: docker08.onedirectdev.in:5000/profanityapi:gcp-production
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/profanityapi/*
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+
+  
+  emailpushapi:
+    image: docker08.onedirectdev.in:5000/emailpushapi:auto-ack-new-feature
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/emailpushapi/*
+    - HTTP_CHECK=GET /emailpushapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.0.31
+    - mysqlslave:172.16.0.31
+    - redis:172.16.1.109
+    - kafka:172.16.1.113
+  emailparseapi:
+    image: docker08.onedirectdev.in:5000/emailparseapi:auto-ack-new-feature
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/emailparseapi/*
+    - HTTP_CHECK=GET /emailparseapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.0.31
+    - mysqlslave:172.16.0.31
+    - redis:172.16.1.109
+    - kafka:172.16.1.113
+  emailresolverapi:
+    image: docker08.onedirectdev.in:5000/emailresolverapi:auto-ack-new-feature
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/emailresolverapi/*
+    - HTTP_CHECK=GET /emailresolverapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.0.31
+    - mysqlslave:172.16.0.31
+    - redis:172.16.1.109
+    - kafka:172.16.1.113
+  emailprocessapi:
+    image: docker08.onedirectdev.in:5000/emailprocessapi:auto-ack-new-feature
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/emailprocessapi/*
+    - HTTP_CHECK=GET /emailprocessapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.0.31
+    - mysqlslave:172.16.0.31
+    - redis:172.16.1.109
+    - kafka:172.16.1.113
+  
+
+  emailticketapi:
+    image: docker08.onedirectdev.in:5000/emailticketapi:auto-ack-new-feature
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/emailticketapi/*
+    - HTTP_CHECK=GET /emailticketapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    - kafkahost=172.16.0.16
+    - kafkaport=7713
+    extra_hosts:
+    - mysql:172.16.0.31
+    - mysqlslave:172.16.0.31
+    - redis:172.16.1.109
+
+
+  emailforwardprocessapi:
+    image: docker08.onedirectdev.in:5000/emailforwardprocessapi:az-prod
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/emailforwardprocessapi/*
+    - HTTP_CHECK=GET /emailforwardprocessapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    - kafkahost=172.16.0.16
+    - kafkaport=7713
+    extra_hosts:
+    - mysql:172.16.0.31
+    - mysqlslave:172.16.0.31
+    - redis:172.16.1.109
+    - kafka:172.16.1.113
+
+
+  thirdpartyapi:
+    image: docker08.onedirectdev.in:5000/thirdpartyapiv2:az-prod
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/thirdpartyapi/*
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    - HTTP_CHECK=GET /thirdpartyapi/status
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+
+  ticketruleapi:
+    image: docker08.onedirectdev.in:5000/ticketruleapi:az-prod
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/ticketruleapi/*
+    - HTTP_CHECK=GET /ticketruleapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+  assignmentruleapi:
+    image: docker08.onedirectdev.in:5000/assignmentruleapi:az-prod
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/assignmentruleapi/*
+    - HTTP_CHECK=GET /assignmentruleapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+  twitterapi:
+    image: docker08.onedirectdev.in:5000/twitterapi:gcp-production
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/twitterapi/*
+    - HTTP_CHECK=GET /twitterapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+    - rabbitmq:172.16.1.167
+    - kafka:172.16.1.113
+  sentimentapi:
+    image: docker08.onedirectdev.in:5000/sentimentapi:az-prod
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/sentimentapi/*
+    - HTTP_CHECK=GET /sentimentapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+  onedirectssoui:
+    image: docker08.onedirectdev.in:5000/onedirectssoui:ODB2-27512
+    ports:
+    - 33003:33003
+    environment:
+    - VIRTUAL_HOST=/sso/*
+    - HTTP_CHECK=/sso/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+  viewsapi:
+    image: docker08.onedirectdev.in:5000/viewsapi:az-prod
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/dracarysapi/*
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+    - elastic:172.16.1.113
+ # bifrostapi:
+ #   image: docker08.onedirectdev.in:5000/bifrostapi:gcp-production
+ #   environment:
+ #   - VIRTUAL_HOST=/bifrostapi/*
+ #   - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+ #   - kafkahost=172.16.0.16
+ #   - kafkaport=7713
+ #   ports:
+ #   - 8080
+ #   extra_hosts:
+ #   - redis:172.16.1.109
+ #   - kafka:172.16.0.16
+ # midgardapi:
+ #   image: docker08.onedirectdev.in:5000/midgardapi:initial
+ #   ports:
+ #   - 3000
+ #   environment:
+ #   - VIRTUAL_HOST=/midgardapi/*
+ #   - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+ #   extra_hosts:
+ #   - mysql:172.16.1.105
+ #   - mysqlslave:172.16.1.105
+ #   - redis:172.16.1.109
+  #instagramapi:
+  #  image: docker08.onedirectdev.in:5000/instagramapi:stage-setup
+  #  environment:
+  #  - VIRTUAL_HOST=/asgardapi/*
+  #  - HTTP_CHECK=GET /asgardapi/v1/status
+  #  - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+  #  - kafkahost=172.16.0.16
+  #  - kafkaport=7713
+  #  ports:
+  #  - 8080
+  #  extra_hosts:
+  #  - mysql:172.16.1.105
+  #  - redis:172.16.1.109
+  #  - mysqlslave:172.16.1.105
+  #  - kafka:172.16.0.16
+  #  - rabbitmq:172.16.1.167
+  gunicorn:
+    image: docker08.onedirectdev.in:5000/gunicorn:az-prod
+    ports:
+    - 7000
+    environment:
+    - VIRTUAL_HOST=/onedirect/*
+    - HTTP_CHECK=GET /onedirect/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+    - rabbitmq:172.16.1.167
+  celery:
+    image: docker08.onedirectdev.in:5000/celery:az-prod
+    environment:
+    - catalina_opts=-xmx1g -xms1g -xx:maxpermsize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - chatmysql:172.16.1.114
+    - chatmysqlslave:172.16.1.114
+    - redis:172.16.1.109
+    - rabbitmq:172.16.1.167
+  beat:
+    image: docker08.onedirectdev.in:5000/celerybeat:ODB10-1529-sla
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+    - rabbitmq:172.16.1.167
+  
+  sla-api:
+    image: docker08.onedirectdev.in:5000/sla-api:ODB10-sla-debug
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/sla-api/*
+    - HTTP_CHECK=GET /sla-api/v1/sla-rules/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    - kafkahost=172.16.0.16
+    - kafkaport=7713
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+
+  sla-legacy:
+    image: docker08.onedirectdev.in:5000/sla-legacy:gcp-production
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/sla-legacy/*
+    - HTTP_CHECK=GET /sla-legacy/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+  akoshav3:
+    image: docker08.onedirectdev.in:5000/akoshav3:gcp-production
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=*/static/*,/util/*,*/admin,/admin/*,/admin/,/,*/OD-Admin/*,/brand,/brand-dashboard/*,/brandfull
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+  crmlegacyapi:
+    image: docker08.onedirectdev.in:5000/crmlegacyapi:az-prod
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/crmLegacy/*
+    - HTTP_CHECK=GET /crmLegacy/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+  elastic-indexer:
+    image: docker08.onedirectdev.in:5000/elastic-indexer:telephony-init
+    environment:
+    - VIRTUAL_HOST=/search/*
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    - kafkahost=172.16.0.16
+    - kafkaport=7713
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+    - elastic:172.16.1.113
+    - kafka:172.16.0.16
+  crmapi:
+    image: docker08.onedirectdev.in:5000/crmapi:az-prod
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/crmService/*
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    - kafkahost=172.16.0.16
+    - kafkaport=7713
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+ # emailewsapi:
+ #   image: docker08.onedirectdev.in:5000/emailewsapi:gcp-production
+ #   ports:
+ #   - 8080
+ #   environment:
+ #   - VIRTUAL_HOST=/emailewsapi/*
+ #   - HTTP_CHECK=GET /emailewsapi/status
+ #   - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+ #   extra_hosts:
+ #   - mysql:172.16.0.31
+ #   - mysqlslave:172.16.0.31
+ #   - redis:172.16.1.109
+ #   - kafka:172.16.1.113
+#  facebookapi:
+#    image: docker08.onedirectdev.in:5000/facebookapi:graph-api-version-upgrade
+#    ports:
+#    - 8080
+#    environment:
+#    - VIRTUAL_HOST=/facebookapi/*
+#    - HTTP_CHECK=GET /facebookapi/status
+#    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+#    extra_hosts:
+#    - mysql:172.16.1.105
+#    - mysqlslave:172.16.1.105
+#    - redis:172.16.1.109
+#    - kafka:172.16.1.113
+  
+  gmbapi:
+    image: docker08.onedirectdev.in:5000/gmbapi:gcp-production
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/gmbapi/*
+    - HTTP_CHECK=GET /gmbapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+    - kafka:172.16.0.16
+    - rabbitmq:172.16.1.167
+
+  # crmstubapi:
+  # image: docker08.onedirectdev.in:5000/crmstubapi:az-prod
+  # ports:
+   # - 8080
+    # environment:
+    # - VIRTUAL_HOST=/crmStub/*
+    # - HTTP_CHECK=GET /crmStub/test
+    # - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    # extra_hosts:
+    # - mysql:172.16.1.105
+    # - mysqlslave:172.16.1.105
+    # - redis:172.16.1.109
+  eaapi:
+    image: docker08.onedirectdev.in:5000/eaapi:az-prod
+    ports:
+    - 8080
+    environment:
+    - virtual_host=/eaapi/*
+    - catalina_opts=-xmx512m -xms512m -xx:maxpermsize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.109
+    - redis:172.16.1.109
+    - kafkahost:172.16.0.16
+    - rabbitmq:172.16.1.167
+  celeryapi:
+    image: docker08.onedirectdev.in:5000/celeryapi:az-prod
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/celeryapi/*
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - redis:172.16.1.109
+    - rabbitmq:172.16.1.167
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+  node-consumers:
+    image: docker08.onedirectdev.in:5000/odnode-consumers:gcp-production
+    ports:
+    - 9029
+    environment:
+    - catalina_opts=-xmx1g -xms1g -xx:maxpermsize=128m
+    extra_hosts:
+    - redis:172.16.1.109
+    - rabbitmq:172.16.1.167
+  mobilegatewayapi:
+    image: docker08.onedirectdev.in:5000/mobilegateway:gcp-production
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/mobilegateway/*
+    - HTTP_CHECK=GET /mobilegateway/health
+    extra_hosts:
+    - serviceCloud:172.16.0.25
+  csat:
+    image: docker08.onedirectdev.in:5000/csat:az-prod
+    environment:
+    - virtual_host=/csat/*
+    - catalina_opts=-xmx1g -xms1g -xx:maxpermsize=128m
+    ports:
+    - 8080
+    extra_hosts:
+    - mysql:172.16.1.105
+    - redis:172.16.1.109
+    - mysqlslave:172.16.1.105
+    - kafka:172.16.1.113
+    - rabbitmq:172.16.1.167
+  customerapi:
+    image: docker08.onedirectdev.in:5000/customerapi:az-prod
+    ports:
+    - 8080
+    environment:
+    - virtual_host=/customerapi/*
+    - catalina_opts=-xmx1g -xms1g -xx:maxpermsize=128m
+    - kafkahost=172.16.0.16
+    - kafkaport=7708
+    extra_hosts:
+    - mysql:172.16.1.105
+    - kafka:172.16.1.113
+    - mysqlslave:172.16.1.105
+    - consolidatedslavehost:172.16.1.105
+    - redis:172.16.0.109
+
+  timelineconsumerapi:
+    image: docker08.onedirectdev.in:5000/timelineconsumerapi:gcp-production
+    ports:
+    - 8080
+    environment:
+    - virtual_host=/timelineconsumerapi/*
+    - http_check=GET /timelineconsumerapi/status
+    - catalina_opts=-xmx1g -xms1g -xx:maxpermsize=128m
+    - kafkahost=172.16.0.16
+    - kafkaport=7708
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+    - cassandra:172.16.0.31
+
+  timelineapi:
+    image: docker08.onedirectdev.in:5000/timelineapi:az-prod
+    ports:
+    - 8080
+    environment:
+    - virtual_host=/timelineapi/*
+    - http_check=GET /timelineapi/status
+    - catalina_opts=-xmx1g -xms1g -xx:maxpermsize=128m
+    - kafkahost=172.16.0.16
+    - kafkaport=7708
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+    - kafka:172.16.1.113
+    - cassandra:172.16.0.31
+
+   #arachneapi:
+   # image: docker08.onedirectdev.in:5000/arachneapi:sms-html-parser
+   #  ports:
+   # - 8080
+   # environment:
+   # - VIRTUAL_HOST=/arachneapi/*
+   # - CATALINA_OPTS=-Xmx512m -Xms512m -XX:MaxPermSize=128m
+   # - kafkahost=172.16.0.16
+   # - kafkaport=7713
+   # extra_hosts:
+   # - mysql:172.16.1.105
+   # - elastic:172.16.1.113
+   # - mysqlslave:172.16.1.105
+   # - consolidatedslavehost:172.16.1.109
+   # - redis:172.16.1.109
+
+  senderapi:
+   image: docker08.onedirectdev.in:5000/sender:az-prod
+   ports:
+     - 8080
+   extra_hosts:
+     - "redis:172.16.1.109"
+     - "haproxy:172.16.1.167"
+   environment:
+     - VIRTUAL_HOST=/sender/*
+     - HTTP_CHECK=GET /sender/status
+     - SPRING_PROFILES_ACTIVE=dock
+     - feedbackkafkaport=7710
+     - feedbackkafkahost=172.16.0.16
+     - messagingkafkaport=7717
+     - messagingkafkahost=172.16.0.16
+     - servicekafkaport=7713
+     - servicekafkahost=172.16.0.16
+     - CATALINA_OPTS=-Xmx512m -Xms512m -XX:MaxPermSize=128m
+
+  reportingapi:
+    image: docker08.onedirectdev.in:5000/reportingapi:gcp-production
+    ports:
+    - 8080
+    environment:
+    - virtual_host=/reportingapi/*
+    - http_check=GET /reportingapi/status
+    - catalina_opts=-xmx1g -xms1g -xx:maxpermsize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.109
+    - redis:172.16.1.215
+    - elastic:172.16.1.113
+    - rabbitmq:172.16.1.167
+  masterdataapi:
+    image: docker08.onedirectdev.in:5000/masterdataapi:gcp-production
+    ports:
+    - 8080
+    environment:
+    - virtual_host=/masterdataapi/*
+    - catalina_opts=-xmx1g -xms1g -xx:maxpermsize=1096m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+  accountsapi:
+    image: docker08.onedirectdev.in:5000/accountsapi:graph-api-version-upgrade
+    ports:
+    - 8080
+    environment:
+    - virtual_host=/accountsapi/*
+    - catalina_opts=-xmx1g -xms1g -xx:maxpermsize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+  publishingcelery:
+    image: docker08.onedirectdev.in:5000/publishingcelery:gcp-production
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.105
+    - redis:172.16.1.109
+    - rabbitmq:172.16.1.167
+  linkedinapi:
+   image: docker08.onedirectdev.in:5000/linkedinapi:linkedin-phase1-bugfix
+   ports:
+   - 8080
+   environment:
+   - VIRTUAL_HOST=/linkedinapi/*
+   - HTTP_CHECK=GET /linkedinapi/v1/status
+   - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+   - kafkahost=172.16.0.16
+   - kafkaport=7713
+   extra_hosts:
+   - mysql:172.16.1.105
+   - mysqlslave:172.16.1.105
+   - redis:172.16.1.109
+   - kafka:172.16.0.16
+   - rabbitmq:172.16.1.167
+  appreviewapi:
+    image: docker08.onedirectdev.in:5000/appreviewapi:gcp-production
+    ports:
+    - 8080
+    environment:
+    - VIRTUAL_HOST=/appreviewapi/*
+    - HTTP_CHECK=GET /appreviewapi/status
+    - CATALINA_OPTS=-Xmx1g -Xms1g -XX:MaxPermSize=128m
+    extra_hosts:
+    - mysql:172.16.1.105
+    - mysqlslave:172.16.1.109
+    - redis:172.16.1.109
+    - rabbitmq:172.16.1.167
+#  powertrackapi:
+#    image: docker08.onedirectdev.in:5000/powertrack:replay
+#    ports:
+#    - 8080
+#   extra_hosts:
+#    - mysql:172.16.1.105
+#   - mysqlslave:172.16.1.105
+#   - redis:172.16.1.109
+
+
+  haproxy:
+    image: dockercloud/haproxy:1.5.2
+    links:
+    - rabbitmq
+    - timelineconsumerapi
+    - timelineapi
+    - beat
+    - gmbapi
+    - auth
+    - brandapi
+    - kong-database
+    - eaapi
+    - senderapi
+    - kong
+    - kongui
+    - ticketapi
+    - wifeapi
+    - suggestionapi
+    - notification
+    - thirdpartyapi
+    - ticketruleapi
+    - assignmentruleapi
+    - gunicorn
+    - celery
+    - sentimentapi
+    - onedirectnewui
+    - accountsapi
+    - onedirectssoui
+    #- search
+    - node-consumers
+    - masterdataapi
+    - viewsapi
+    - emailpushapi
+    - emailparseapi
+    - emailresolverapi
+    - emailprocessapi
+    - emailticketapi
+    - emailforwardprocessapi
+    - sla-api
+    - mobilegatewayapi
+    - publishingcelery
+    - customerapi
+    - akoshav3
+    - elastic-indexer
+    - emailapi
+    - profanityapi
+    #- crmapi
+    #- arachneapi
+    - reportingapi
+    # - linkedinapi
+    - celeryapi
+    - isapi
+    - appreviewapi
+    #- node-consumers
+    - emailewsapi
+    - csat
+    - twitterapi
+    - ingressapi
+    #- crmlegacyapi
+    - airsewaapi
+    #- sla-legacy
+    #- bifrostapi
+    #- midgardapi
+    #- powertrackapi
+    environment:
+    - STATS_AUTH=admin:kar.95424
+    - EXTRA_DEFAULT_SETTINGS=stats refresh 5s
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+    - 9080:80
+    - 1936:1936
